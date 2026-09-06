@@ -1,486 +1,537 @@
 # 🧪 n8n Isolated Staging Evaluation
 
-> **A controlled Docker-based staging laboratory for validating n8n workflow reliability, persistence behavior, and development-patch compatibility.**
-
-![Docker](https://img.shields.io/badge/Docker-Staging-blue?logo=docker)
-![n8n](https://img.shields.io/badge/n8n-2.36.7-orange?logo=n8n)
-![Environment](https://img.shields.io/badge/Environment-Isolated%20Sandbox-success)
-![Tests](https://img.shields.io/badge/Regression%20Tests-PASS-brightgreen)
-![Patch](https://img.shields.io/badge/Patch-Compatibility%20Blocked-yellow)
-![Status](https://img.shields.io/badge/Evaluation-Completed-success)
+> **DevOps / Infrastructure Testing Project**
+> Isolated Docker-based staging environment for evaluating n8n workflow functionality, persistence, operational stability, and compatibility of a development license patch.
 
 ---
 
 ## 📌 Project Overview
 
-This repository contains the documentation, test evidence, and compatibility assessment from an **isolated n8n staging environment** created for internal DevOps evaluation.
+This repository documents an isolated staging evaluation of **n8n** using Docker.
 
-The primary objective was to determine whether a development patch could be evaluated safely against a controlled n8n deployment while ensuring that normal platform functionality remained stable.
+The primary goal was to establish a clean and reproducible n8n staging environment, validate normal workflow functionality, test persistence across container lifecycle operations, and perform a **static compatibility assessment** of the `n8n-dev-license-bypass` patch.
 
-Rather than testing directly against a production environment, the evaluation was performed inside a dedicated Docker container with persistent storage.
+The patch itself was **not executed** against the staging instance because the patch documentation targets **n8n v1.119.0**, while the staging environment uses **n8n v2.36.7**. Applying a source-level patch across this version gap without compatibility validation could introduce build failures or unexpected behavior.
 
-### What was evaluated?
-
-The staging environment was used to validate:
-
-* ⚙️ n8n installation and startup
-* 🔄 Workflow execution
-* 🌐 HTTP Request processing
-* 🔗 Webhook processing
-* 🔐 Credential storage
-* 🔧 Data transformation
-* ♻️ Container restart behavior
-* 💾 Persistent data across container recreation
-* 🔍 Static development-patch compatibility
-* 🛡️ Potential compatibility and operational risks
+> **Important:** This evaluation focuses on safe staging validation and compatibility assessment. No production systems or production credentials were used.
 
 ---
 
-# 🎯 Evaluation Objectives
+## 🎯 Evaluation Objectives
 
-The evaluation was designed around four major goals.
+The staging evaluation focused on the following areas:
 
-### 1. Establish an Isolated Environment
-
-Deploy a clean n8n instance inside Docker without affecting any production or existing services.
-
-### 2. Validate Core Functionality
-
-Confirm that normal n8n functionality works correctly before performing compatibility analysis.
-
-### 3. Assess Patch Compatibility
-
-Compare the documented patch target version with the staging version and determine whether the patch can safely be evaluated.
-
-### 4. Document Operational Risks
-
-Record version conflicts, build dependencies, persistence behavior, limitations, and potential upgrade risks.
+* 🐳 Deploy a clean n8n instance using Docker
+* ⚙️ Validate basic workflow execution
+* 🌐 Validate webhook processing
+* 🔗 Validate HTTP Request functionality
+* 🔄 Validate data transformation
+* 🔐 Validate credential storage
+* ♻️ Validate container restart behavior
+* 💾 Validate persistence after container recreation
+* 🔍 Review patch source and documented dependencies
+* ⚠️ Identify version compatibility risks
+* 📝 Document limitations and operational considerations
 
 ---
 
-# 🏗️ Staging Architecture
-
-The test environment used a lightweight Docker-based deployment.
+## 🏗️ Staging Architecture
 
 ```text
-                    ┌─────────────────────────┐
-                    │      Ubuntu Host        │
-                    │                         │
-                    │       Docker Engine     │
-                    └────────────┬────────────┘
-                                 │
-                                 ▼
-                    ┌─────────────────────────┐
-                    │     n8n-staging         │
-                    │                         │
-                    │       n8n v2.36.7       │
-                    │                         │
-                    │      Port: 5678         │
-                    └────────────┬────────────┘
-                                 │
-                                 │ Persistent Mount
-                                 ▼
-                    ┌─────────────────────────┐
-                    │   n8n-staging-data      │
-                    │      Docker Volume      │
-                    └─────────────────────────┘
+┌─────────────────────────────────────────────┐
+│              Ubuntu Host System              │
+│                                             │
+│  ┌───────────────────────────────────────┐  │
+│  │          Docker Container             │  │
+│  │                                       │  │
+│  │          n8n v2.36.7                  │  │
+│  │          Port: 5678                   │  │
+│  │                                       │  │
+│  │  • Workflow Execution                 │  │
+│  │  • Webhook Processing                 │  │
+│  │  • HTTP Requests                      │  │
+│  │  • Data Transformation                │  │
+│  │  • Credential Storage                 │  │
+│  └──────────────────┬────────────────────┘  │
+│                     │                       │
+│                     ▼                       │
+│          Docker Persistent Volume           │
+│             n8n-staging-data                │
+│                                             │
+└─────────────────────────────────────────────┘
 ```
 
 ### Isolation Model
 
-The staging instance was intentionally separated from production workloads.
+The evaluation environment was isolated from existing services:
 
-```text
-Production Environment
-        │
-        │    NO CONNECTION
-        │
-        X
-        │
-        ▼
-┌──────────────────────────┐
-│   Isolated Docker Lab    │
-│                          │
-│   n8n 2.36.7             │
-│   n8n-staging             │
-│   n8n-staging-data        │
-└──────────────────────────┘
+* Dedicated Docker container
+* Dedicated Docker volume
+* Dedicated host port
+* Non-production test credentials
+* No production workflows
+* No production data
+* No production services modified
+
+---
+
+## 🧰 Environment
+
+| Component         | Configuration               |
+| ----------------- | --------------------------- |
+| Host OS           | Ubuntu Linux                |
+| Container Runtime | Docker                      |
+| Application       | n8n                         |
+| n8n Version       | `2.36.7`                    |
+| Container Name    | `n8n-staging`               |
+| Host Port         | `5680`                      |
+| Container Port    | `5678`                      |
+| Persistent Volume | `n8n-staging-data`          |
+| Deployment Type   | Standalone Docker Container |
+| Database          | Default local n8n storage   |
+| Environment       | Isolated staging            |
+
+---
+
+## 🚀 Deployment Validation
+
+The staging instance was deployed using a dedicated Docker volume:
+
+```bash
+docker volume create n8n-staging-data
 ```
 
-This allowed functional and persistence testing without introducing changes to existing services.
+The n8n container was started with:
 
----
+```bash
+docker run -d \
+  --name n8n-staging \
+  -p 5680:5678 \
+  -v n8n-staging-data:/home/node/.n8n \
+  n8nio/n8n:2.36.7
+```
 
-# 🖥️ Environment Details
-
-| Component         | Configuration                    |
-| ----------------- | -------------------------------- |
-| Host OS           | Ubuntu Linux                     |
-| Runtime           | Docker                           |
-| Application       | n8n                              |
-| n8n Version       | `2.36.7`                         |
-| Container         | `n8n-staging`                    |
-| Persistent Volume | `n8n-staging-data`               |
-| Host Port         | `5680`                           |
-| Container Port    | `5678`                           |
-| Deployment Type   | Docker CLI                       |
-| Environment       | Isolated local staging           |
-| Production Impact | None                             |
-| Database          | Default local deployment storage |
-
----
-
-# 🚀 Deployment Validation
-
-The staging container was deployed using the official n8n container image.
-
-The deployment was validated through:
-
-* Container startup
-* Application availability
-* n8n UI accessibility
-* Container logs
-* Workflow execution
-* Persistent storage verification
-
-The application became accessible through:
+The n8n editor was successfully accessed through:
 
 ```text
 http://localhost:5680
 ```
 
-The container remained isolated from production services throughout the evaluation.
+### Deployment Result
+
+**PASS ✅**
+
+The container started successfully and the n8n editor became available.
 
 ---
 
 # 🧪 Functional Test Matrix
 
-The following regression tests were executed against the staging instance.
-
-| Test                 | Result | Purpose                              |
-| -------------------- | ------ | ------------------------------------ |
-| n8n Startup          | ✅ PASS | Validate application startup         |
-| Basic Workflow       | ✅ PASS | Validate workflow execution          |
-| HTTP Request         | ✅ PASS | Validate external HTTP processing    |
-| Data Transformation  | ✅ PASS | Validate node data handling          |
-| Webhook              | ✅ PASS | Validate incoming webhook processing |
-| Credential Storage   | ✅ PASS | Validate credential persistence      |
-| Container Restart    | ✅ PASS | Validate restart behavior            |
-| Container Recreation | ✅ PASS | Validate persistent storage          |
-
-### Overall Result
-
-```text
-┌─────────────────────────────────────┐
-│        STAGING REGRESSION TEST      │
-├─────────────────────────────────────┤
-│                                     │
-│  Tests Executed       : 8           │
-│  Passed               : 8           │
-│  Failed               : 0           │
-│  Blocked               : 0           │
-│                                     │
-│  Result               : PASS ✅     │
-│                                     │
-└─────────────────────────────────────┘
-```
+| Test                          | Result        | Status     |
+| ----------------------------- | ------------- | ---------- |
+| n8n Container Startup         | Successful    | ✅ PASS     |
+| Basic Workflow Execution      | Successful    | ✅ PASS     |
+| HTTP Request                  | Successful    | ✅ PASS     |
+| Data Transformation           | Successful    | ✅ PASS     |
+| Webhook Processing            | Successful    | ✅ PASS     |
+| Credential Storage            | Successful    | ✅ PASS     |
+| Container Restart             | Successful    | ✅ PASS     |
+| Container Recreation          | Successful    | ✅ PASS     |
+| Persistent Data Recovery      | Successful    | ✅ PASS     |
+| Patch Execution               | Not performed | ⚠️ BLOCKED |
+| Enterprise Feature Validation | Not performed | ⚠️ BLOCKED |
 
 ---
 
-# ⚙️ Test Details
+# 🔬 Detailed Test Results
 
 ## 1. Basic Workflow Execution
 
-A simple workflow was created using:
+### Workflow
 
 ```text
 Manual Trigger
       │
       ▼
 Edit Fields
+      │
+      ▼
+Execution Success
 ```
 
-Test data:
+Test value:
 
 ```text
 status = staging-test
 ```
 
-The workflow executed successfully.
+### Result
 
-**Result:** ✅ PASS
+Workflow executed successfully.
 
----
-
-## 2. HTTP Request Test
-
-The HTTP Request node was tested using a GET request against a public test endpoint.
-
-```text
-Manual Trigger
-      │
-      ▼
-HTTP Request
-      │
-      ▼
-Response
-```
-
-The request completed successfully and returned valid response data.
-
-**Result:** ✅ PASS
+**Status: ✅ PASS**
 
 ---
 
-## 3. Data Transformation Test
+## 2. Webhook Processing
 
-A data transformation workflow was created with the following test fields:
-
-```text
-name        = n8n-staging
-environment = test
-status      = active
-```
-
-The workflow executed successfully and produced the expected structured data.
-
-**Result:** ✅ PASS
-
----
-
-## 4. Webhook Test
-
-A webhook endpoint was configured for:
+A webhook workflow was configured using:
 
 ```text
 POST /webhook-test/baseline-test
 ```
 
-The webhook was tested with JSON input representing a staging request.
+Test request:
 
-The workflow successfully received and processed the request.
+```bash
+curl -X POST http://localhost:5680/webhook-test/baseline-test \
+  -H "Content-Type: application/json" \
+  -d '{"test":"baseline","source":"docker-staging"}'
+```
 
-**Result:** ✅ PASS
+The webhook returned a successful workflow-start response and the execution completed successfully.
+
+**Status: ✅ PASS**
 
 ---
 
-## 5. Credential Storage Test
+## 3. Credential Storage
 
-A non-production test credential was created:
+A non-production Header Auth credential was created for testing:
 
 ```text
-Credential Type : Header Auth
-Name            : X-Staging-Test
-Value           : staging-only-test
+Name: X-Staging-Test
+Value: staging-only-test
 ```
 
-The credential was saved successfully and remained available after restart and container recreation.
+The credential was successfully stored in n8n.
 
-**Result:** ✅ PASS
+**Status: ✅ PASS**
+
+> No production credentials were used.
 
 ---
 
-# ♻️ Persistence & Recovery Testing
+## 4. Data Transformation
 
-Persistence behavior was one of the key parts of the evaluation.
-
-The n8n data directory was mapped to a Docker volume:
+Test workflow:
 
 ```text
-n8n-staging-data
-        │
-        ▼
-/home/node/.n8n
+Manual Trigger
+      │
+      ▼
+Edit Fields
+      │
+      ▼
+Transformed Test Data
 ```
 
-Two recovery scenarios were tested.
-
-### Container Restart
+Test fields:
 
 ```text
-Running Container
-       │
-       ▼
-docker restart
-       │
-       ▼
-Container Running
-       │
-       ▼
-Data Available
+name = n8n-staging
+environment = test
+status = active
 ```
 
-Existing workflows and credentials remained available.
+Execution completed successfully.
 
-**Result:** ✅ PASS
+**Status: ✅ PASS**
 
-### Container Recreation
+---
 
-The original container was stopped and removed.
+## 5. HTTP Request
 
-A new container was then created using the same persistent volume.
+The HTTP Request node was tested against:
 
 ```text
-Old Container
-     │
-     ├── STOP
-     └── REMOVE
-          │
-          ▼
-    New Container
-          │
-          ▼
- Same Docker Volume
-          │
-          ▼
- Existing Data
+https://httpbin.org/get
 ```
 
-Previously created workflows and credentials remained available.
+Method:
 
-**Result:** ✅ PASS
+```text
+GET
+```
+
+The request completed successfully and returned the expected HTTP response.
+
+**Status: ✅ PASS**
+
+---
+
+# ♻️ Lifecycle & Persistence Testing
+
+## Container Restart
+
+The running n8n container was restarted:
+
+```bash
+docker restart n8n-staging
+```
+
+After restart:
+
+* Workflows remained available
+* Credentials remained available
+* n8n editor remained accessible
+* Workflow execution continued normally
+
+**Status: ✅ PASS**
+
+---
+
+## Container Recreation
+
+The container was completely removed and recreated:
+
+```bash
+docker stop n8n-staging
+docker rm n8n-staging
+```
+
+Then recreated using the same persistent Docker volume:
+
+```bash
+docker run -d \
+  --name n8n-staging \
+  -p 5680:5678 \
+  -v n8n-staging-data:/home/node/.n8n \
+  n8nio/n8n:2.36.7
+```
+
+After recreation, the following remained available:
+
+* `Baseline Workflow Test`
+* `Data Transformation Test`
+* `X-Staging-Test` credential
+
+This confirms that the dedicated Docker volume successfully preserved the n8n application data across container replacement.
+
+**Status: ✅ PASS**
 
 ---
 
 # 🔍 Patch Compatibility Assessment
 
-The development patch was reviewed separately from the staging deployment.
+## Patch Repository
 
-The patch documentation identifies:
+The development license patch was reviewed from the forked repository:
 
 ```text
-Documented Target Version
-n8n v1.119.0
+n8n-dev-license-bypass
 ```
 
-The staging environment uses:
+The assessment branch:
 
 ```text
-Staging Version
+compatibility-assessment
+```
+
+The patch documentation identifies **n8n v1.119.0** as its compatibility target.
+
+The staging environment, however, uses:
+
+```text
 n8n v2.36.7
 ```
 
-This created a significant version and build compatibility gap.
-
-### Compatibility Finding
+### Compatibility Difference
 
 ```text
 Patch Target
     │
     ▼
-v1.119.0
+n8n v1.119.0
     │
-    │ Version mismatch
+    │  Version gap
     ▼
-v2.36.7
+n8n v2.36.7
     │
     ▼
-Compatibility NOT verified
+Staging Environment
 ```
 
-Because the documented patch target and staging version differ substantially, patch execution was **not performed** against n8n 2.36.7.
-
-This decision prevented an unsupported patch from being applied to a newer build without first establishing compatibility.
+Because the patch modifies n8n source files, this version difference is operationally significant.
 
 ---
 
-# 🛡️ Static Patch Review
+# 🧩 Static Patch Review
 
-A static review of the patch source was completed to identify:
+The patch was inspected without executing it against the running staging environment.
 
-* Targeted source files
-* Version assumptions
-* Build dependencies
-* Potential upgrade conflicts
-* Maintenance concerns
-* Areas likely to require changes between n8n versions
+The reviewed areas included:
 
-The patch modifies multiple areas of the n8n codebase, including backend, frontend, configuration, and workspace-related files.
+```text
+packages/@n8n/backend-common/src/logging/logger.ts
 
-The static review is documented separately:
+packages/@n8n/node-cli/src/configs/eslint.ts
 
-📄 `patch-review/static-analysis.md`
+packages/cli/src/license.ts
+
+packages/frontend/editor-ui/src/app/components/EnterpriseEdition.ee.vue
+
+packages/frontend/editor-ui/src/app/stores/settings.store.ts
+
+packages/frontend/editor-ui/src/shims.d.ts
+
+pnpm-workspace.yaml
+```
+
+### Static Assessment
+
+The patch affects multiple areas of the n8n source tree, including:
+
+* Backend/license-related logic
+* Frontend enterprise UI behavior
+* Application settings
+* Build/workspace configuration
+* Development environment behavior
+
+Because multiple source-level components are modified, compatibility cannot safely be assumed across major/minor n8n version changes.
 
 ---
 
-# ⚠️ Important Limitations
+# ⚠️ Patch Execution Status
 
-The following limitations were identified during the evaluation.
+The patch was **not executed** against n8n v2.36.7.
 
-### Version Mismatch
+### Reason
 
-The patch documentation targets:
+The documented patch target is:
 
 ```text
 n8n v1.119.0
 ```
 
-while the staging environment runs:
+while the staging environment is:
 
 ```text
 n8n v2.36.7
 ```
 
-Therefore, compatibility cannot be assumed.
+Executing the patch without first establishing source compatibility could result in:
 
-### Patch Execution
+* Build failures
+* Missing or changed source paths
+* TypeScript compilation errors
+* Frontend compilation failures
+* Runtime regressions
+* License subsystem instability
+* Unexpected behavior during upgrades
 
-The patch was **not executed** against n8n 2.36.7 because the documented target version does not match the staging build.
+Therefore, patch execution was treated as **BLOCKED pending version compatibility validation**.
 
-### Enterprise Feature Validation
-
-Enterprise-feature activation through the patch was **not validated**.
-
-The evaluation therefore does not claim that the patch successfully enables enterprise functionality on n8n 2.36.7.
-
-### Before/After Comparison
-
-A direct before/after feature comparison was not performed because applying the patch to the newer staging build was outside the verified compatibility boundary.
+**Status: ⚠️ BLOCKED**
 
 ---
 
-# 📊 Final Evaluation
+# 🚫 Enterprise Feature Validation
 
-| Area                            | Status           |
-| ------------------------------- | ---------------- |
-| Isolated Docker Deployment      | ✅ PASS           |
-| n8n 2.36.7 Startup              | ✅ PASS           |
-| Workflow Execution              | ✅ PASS           |
-| HTTP Request                    | ✅ PASS           |
-| Data Transformation             | ✅ PASS           |
-| Webhook Processing              | ✅ PASS           |
-| Credential Storage              | ✅ PASS           |
-| Container Restart               | ✅ PASS           |
-| Container Recreation            | ✅ PASS           |
-| Persistent Data                 | ✅ PASS           |
-| Static Patch Review             | ✅ COMPLETED      |
-| Patch Compatibility with 2.36.7 | ⚠️ NOT VERIFIED  |
-| Patch Execution                 | ⏸️ NOT PERFORMED |
-| Enterprise Feature Validation   | ⏸️ NOT COMPLETED |
+Enterprise/advanced feature activation was not validated through the patch.
+
+Reason:
+
+```text
+Patch execution
+      │
+      ▼
+Version mismatch detected
+      │
+      ▼
+Patch execution blocked
+      │
+      ▼
+Enterprise validation not performed
+```
+
+This means the evaluation does **not** claim that the patch successfully activates enterprise features on n8n v2.36.7.
+
+**Status: ⚠️ NOT VALIDATED**
 
 ---
 
-# 🧠 Key Findings
+# 📊 Overall Findings
 
-### Finding 01 — Core n8n functionality is stable
+### Successfully Validated
 
-All planned baseline and regression workflows executed successfully in the isolated environment.
+```text
+Docker Deployment             ✅
+n8n Startup                   ✅
+Basic Workflow Execution      ✅
+HTTP Request                  ✅
+Data Transformation           ✅
+Webhook Processing            ✅
+Credential Storage            ✅
+Container Restart             ✅
+Container Recreation          ✅
+Persistent Data               ✅
+```
 
-### Finding 02 — Persistent storage works correctly
+### Not Validated
 
-Workflows and credentials survived both container restart and complete container recreation when the persistent Docker volume was retained.
+```text
+Patch Execution               ⚠️ BLOCKED
+Enterprise Feature Activation ⚠️ NOT VALIDATED
+Before/After Patch Comparison ⚠️ NOT PERFORMED
+```
 
-### Finding 03 — Patch compatibility is the primary blocker
+---
 
-The patch documentation targets an older n8n release than the version used in staging.
+# ⚠️ Risks & Limitations
 
-### Finding 04 — Static analysis is feasible without modifying the environment
+## Version Compatibility Risk
 
-The patch could be reviewed at source level to identify potential compatibility risks without executing unsupported modifications.
+The largest identified risk is the difference between the documented patch target and the staging n8n version.
 
-### Finding 05 — Production deployment should not be inferred
+```text
+Documented Patch Target: n8n 1.119.0
+Staging Version:         n8n 2.36.7
+```
 
-Successful staging regression tests do not establish that the development patch is safe for production or compatible with newer n8n releases.
+Source-level compatibility should be established before attempting any patch execution.
+
+## Upgrade Risk
+
+A source-modifying patch may require maintenance after n8n upgrades.
+
+Potential upgrade impacts include:
+
+* Changed source files
+* Renamed functions
+* Changed APIs
+* Changed frontend components
+* Dependency updates
+* Build system changes
+
+## Validation Limitation
+
+Because the patch was not executed:
+
+* Enterprise feature activation could not be confirmed
+* Patch runtime behavior could not be measured
+* Patch-related regressions could not be directly tested
+* Before/after comparison could not be performed
+
+These limitations are explicitly recorded rather than inferred.
+
+---
+
+# 🛡️ Safety & Isolation
+
+The evaluation was performed as a staging-only exercise.
+
+### Controls
+
+* Dedicated Docker container
+* Dedicated persistent volume
+* Non-production test data
+* Non-production credential
+* No production workflow modification
+* No production service modification
+* No production credential usage
+
+The environment can be removed independently without affecting unrelated services.
 
 ---
 
@@ -488,10 +539,11 @@ Successful staging regression tests do not establish that the development patch 
 
 ```text
 n8n-staging-evaluation-
-│
 ├── README.md
-│
 ├── EVALUATION-REPORT.md
+│
+├── evidence/
+│   └── .gitkeep
 │
 ├── patch-review/
 │   └── static-analysis.md
@@ -499,84 +551,76 @@ n8n-staging-evaluation-
 ├── tests/
 │   └── README.md
 │
-├── workflows/
-│   └── README.md
-│
-└── evidence/
-    └── .gitkeep
+└── workflows/
+    └── README.md
 ```
 
 ### Directory Purpose
 
-| Directory              | Purpose                                         |
-| ---------------------- | ----------------------------------------------- |
-| `patch-review/`        | Static compatibility and risk analysis          |
-| `tests/`               | Test methodology and validation notes           |
-| `workflows/`           | Workflow-specific documentation                 |
-| `evidence/`            | Supporting screenshots, logs, and test evidence |
-| `EVALUATION-REPORT.md` | Detailed evaluation report                      |
+| Path                   | Purpose                                 |
+| ---------------------- | --------------------------------------- |
+| `README.md`            | Project overview and evaluation summary |
+| `EVALUATION-REPORT.md` | Detailed evaluation report              |
+| `evidence/`            | Test evidence and supporting artifacts  |
+| `patch-review/`        | Patch compatibility and static analysis |
+| `tests/`               | Test documentation                      |
+| `workflows/`           | Workflow-related documentation          |
 
 ---
 
 # 📚 Documentation
 
-### Main Documentation
+The repository contains documentation covering:
 
-* 📄 `README.md` — Project overview and evaluation summary
-* 📄 `EVALUATION-REPORT.md` — Detailed staging evaluation report
-
-### Technical Documentation
-
-* 🔍 `patch-review/static-analysis.md` — Patch compatibility and static analysis
-* 🧪 `tests/README.md` — Testing methodology
-* ⚙️ `workflows/README.md` — Workflow test documentation
-* 📦 `evidence/` — Supporting evidence and artifacts
-
----
-
-# 🔐 Safety & Isolation Notes
-
-This evaluation was designed as a controlled staging exercise.
-
-The environment was:
-
-* Locally isolated
-* Containerized with Docker
-* Separated from production workloads
-* Backed by a dedicated persistent volume
-* Tested using non-production data
-* Evaluated without modifying production services
-
-The patch compatibility assessment was limited to static analysis because the documented patch target did not match the staging n8n version.
+* Staging environment setup
+* Functional testing
+* Persistence testing
+* Container lifecycle testing
+* Patch compatibility assessment
+* Static source review
+* Risks and limitations
+* Final evaluation findings
 
 ---
 
-# 🏁 Conclusion
+# ✅ Final Evaluation
 
-The isolated n8n staging environment successfully passed all planned core functionality, workflow, webhook, credential, restart, and persistence tests.
+The isolated n8n staging environment was successfully deployed and validated.
 
-The primary limitation was **development-patch compatibility**.
+All planned **non-patch functional and persistence tests passed**, including workflow execution, webhook processing, HTTP requests, data transformation, credential storage, container restart, and complete container recreation with persistent data recovery.
 
-The patch documentation targets **n8n v1.119.0**, while the staging environment uses **n8n v2.36.7**. Due to this version/build mismatch, patch execution and enterprise-feature validation were intentionally not performed.
+The development license patch was **not executed** because its documented compatibility target (`n8n v1.119.0`) does not match the staging version (`n8n v2.36.7`).
 
-From a DevOps evaluation perspective, the staging environment itself proved stable and reproducible, while the patch requires further compatibility work before it can be considered for evaluation against the newer n8n release.
+Therefore:
 
-> **Final Assessment:**
-> 🟢 **Staging Environment — PASS**
-> 🟢 **Core n8n Functionality — PASS**
-> 🟢 **Persistence & Recovery — PASS**
-> 🟡 **Patch Compatibility — BLOCKED BY VERSION/BUILD MISMATCH**
+> **The staging environment is operationally healthy, but the patch itself remains unvalidated due to a documented version compatibility gap.**
+
+This provides a clear technical basis for deciding whether a version-aligned patch test should be performed separately.
 
 ---
 
-## 👨‍💻 Evaluation Context
+## 🧾 Evaluation Summary
 
-This project was created as part of a controlled DevOps staging and compatibility assessment exercise.
-
-The repository focuses on reproducible testing, operational safety, evidence-based evaluation, and clear documentation of both successful results and technical limitations.
+| Area                             | Result           |
+| -------------------------------- | ---------------- |
+| Staging Deployment               | ✅ PASS           |
+| Workflow Execution               | ✅ PASS           |
+| Webhook Processing               | ✅ PASS           |
+| HTTP Request                     | ✅ PASS           |
+| Data Transformation              | ✅ PASS           |
+| Credential Storage               | ✅ PASS           |
+| Restart Persistence              | ✅ PASS           |
+| Container Recreation Persistence | ✅ PASS           |
+| Patch Static Review              | ✅ COMPLETED      |
+| Patch Execution                  | ⚠️ BLOCKED       |
+| Enterprise Validation            | ⚠️ NOT VALIDATED |
+| Production Impact                | ✅ NONE           |
 
 ---
 
-**Status:** `Evaluation Completed`
-**Environment:** `Isolated Docker Staging`
-**Application:** `n8n 2.36.7`
+**Evaluation Type:** Isolated Staging Test
+**Application:** n8n
+**Staging Version:** `2.36.7`
+**Patch Target Version:** `1.119.0`
+**Environment:** Docker / Ubuntu
+**Final Status:** 🟡 **Staging Validated — Patch Compatibility Blocked**
